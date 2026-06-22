@@ -357,6 +357,13 @@ const shuf=a=>[...a].sort(()=>Math.random()-.5);
 const pct=(n,t)=>Math.round(n/t*100);
 const starIco=p=>p>=90?'🌟':p>=70?'⭐':'💪';
 
+// Replace the target word in an example sentence with blanks during testing
+function maskTerm(sentence, term){
+  if(!sentence||!term) return sentence;
+  const escaped=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  return sentence.replace(new RegExp(escaped,'gi'),'_____');
+}
+
 /* ─── THEME ─────────────────────────────────── */
 function initTheme(){applyTheme(localStorage.getItem('vc_theme')||'light');}
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
@@ -536,7 +543,7 @@ function renderLearn(){
   if(lrn.idx>=lrn.cards.length){endLearn();return;}
   const card=lrn.cards[lrn.order[lrn.idx]];
   document.getElementById('lDef').textContent=card.definition;
-  document.getElementById('lEx').textContent=card.example?`"${card.example}"`:'' ;
+  document.getElementById('lEx').textContent=card.example?`"${maskTerm(card.example,card.term)}"`:'' ;
   document.getElementById('lInput').value='';document.getElementById('lInput').className='ainput';
   document.getElementById('lFb').textContent='';document.getElementById('lFb').className='fb';
   document.getElementById('lCheck').textContent='Check';document.getElementById('lCheck').onclick=checkLearn;
