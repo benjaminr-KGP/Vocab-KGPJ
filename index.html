@@ -357,11 +357,21 @@ const shuf=a=>[...a].sort(()=>Math.random()-.5);
 const pct=(n,t)=>Math.round(n/t*100);
 const starIco=p=>p>=90?'🌟':p>=70?'⭐':'💪';
 
-// Replace the target word in an example sentence with blanks during testing
+// Replace the target word in an example sentence with blanks during testing.
+// Handles exact matches, conjugations (make→making), and split phrases (make progress→making...progress).
 function maskTerm(sentence, term){
   if(!sentence||!term) return sentence;
-  const escaped=term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  return sentence.replace(new RegExp(escaped,'gi'),'_____');
+  let result = sentence;
+  // 1. Blank the full term as written (catches exact phrase matches)
+  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  result = result.replace(new RegExp(escaped,'gi'),'_____');
+  // 2. Blank each content word (length >= 4) with stem matching,
+  //    so "make" catches "making/made", "progress" catches "progress/progressing" etc.
+  term.split(/\s+/).filter(w=>w.length>=4).forEach(word=>{
+    const we = word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    result = result.replace(new RegExp('\\b'+we+'\\w*\\b','gi'),'_____');
+  });
+  return result;
 }
 
 /* ─── THEME ─────────────────────────────────── */
