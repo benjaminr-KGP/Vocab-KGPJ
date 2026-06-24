@@ -1,844 +1,679 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Vocab Cards</title>
-<link rel="manifest" href="./manifest.json">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Vocab">
-<link rel="apple-touch-icon" href="./icon-192.png">
-<meta name="theme-color" id="tcMeta" content="#1B6B72">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10172B">
+<title>Pulse Check — Pronunciation Race</title>
 <style>
-/* ── Variables ─────────────────────────────── */
-:root{
-  --bg:#F3F5F9;--surf:#FFF;--surf2:#ECEEF5;--bdr:#D4D8E8;
-  --txt:#1B1F2E;--mut:#6B7291;
-  --pri:#1B6B72;--pri2:#22878F;--pri3:#E2F2F4;
-  --star:#F5A623;
-  --ok:#1A7A52;--okb:#EAFAF2;--err:#C93434;--errb:#FEF0F0;
-  --cb:#FAFCFF;--cl:#C8DBE8;--cbr:#B8CDD8;
-  --r:14px;--rs:9px;
-  --sh:0 2px 10px rgba(0,0,0,.07);--shl:0 6px 24px rgba(0,0,0,.11);
-}
-[data-theme=dark]{
-  --bg:#0F1117;--surf:#1C1F2E;--surf2:#252840;--bdr:#333654;
-  --txt:#E4E6F5;--mut:#8890B8;
-  --pri:#3EBFC9;--pri2:#50CDD7;--pri3:#1A3A3D;
-  --ok:#34C87E;--okb:#0D2B1F;--err:#F06060;--errb:#2B0D0D;
-  --cb:#1A2230;--cl:#2A3D50;--cbr:#334055;
-  --sh:0 2px 10px rgba(0,0,0,.3);--shl:0 6px 24px rgba(0,0,0,.5);
-}
+  :root{
+    --bg:#10172B;
+    --surface:#1A2340;
+    --surface-2:#232C4D;
+    --accent:#2DD4C4;
+    --success:#5FD068;
+    --danger:#FF5C5C;
+    --warning:#F2B705;
+    --text:#F4F6FB;
+    --text-muted:#8893B8;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);overscroll-behavior:none;}
+  body{display:flex;flex-direction:column;min-height:100vh;}
+  button{font-family:inherit;}
+  #app{flex:1;display:flex;flex-direction:column;}
+  .screen{display:none;flex:1;flex-direction:column;padding:20px;max-width:720px;width:100%;margin:0 auto;}
+  .screen.active{display:flex;}
 
-/* ── Reset ─────────────────────────────────── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-html,body{height:100%;background:var(--bg);color:var(--txt);
-  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-  transition:background .2s,color .2s}
+  /* ---------- Setup ---------- */
+  .title{font-size:clamp(28px,6vw,40px);font-weight:800;letter-spacing:-0.02em;margin:8px 0 2px;}
+  .tagline{color:var(--text-muted);margin:0 0 24px;font-size:15px;}
+  .field{margin-bottom:20px;}
+  .field label{display:block;font-size:13px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px;}
+  .toggle-row{display:flex;gap:10px;}
+  .toggle-row label{flex:1;}
+  .toggle-btn{display:block;width:100%;text-align:center;padding:14px 10px;border-radius:12px;border:2px solid var(--surface-2);background:var(--surface);cursor:pointer;font-weight:700;font-size:14px;transition:border-color .15s, background .15s;}
+  input[type=radio]{display:none;}
+  input[type=radio]:checked + .toggle-btn{border-color:var(--accent);background:var(--surface-2);color:var(--accent);}
+  textarea{width:100%;min-height:160px;background:var(--surface);border:2px solid var(--surface-2);border-radius:12px;color:var(--text);padding:14px;font-family:var(--mono);font-size:14px;line-height:1.5;resize:vertical;}
+  textarea:focus{outline:none;border-color:var(--accent);}
+  .hint-text{color:var(--text-muted);font-size:12px;margin-top:6px;line-height:1.5;}
+  .num-row{display:flex;align-items:center;gap:10px;}
+  .round-length-display{font-family:var(--mono);font-size:15px;color:var(--text-muted);padding:10px 0;}
+  .check-row{display:flex;align-items:center;gap:10px;color:var(--text-muted);font-size:14px;}
+  .check-row input{width:18px;height:18px;accent-color:var(--accent);}
+  .start-btn{margin-top:8px;padding:18px;border-radius:14px;border:none;background:var(--accent);color:#0A1020;font-weight:800;font-size:17px;cursor:pointer;}
+  .start-btn:disabled{background:var(--surface-2);color:var(--text-muted);cursor:not-allowed;}
+  .start-btn:not(:disabled):active{transform:scale(0.98);}
+  .warn-banner{background:rgba(255,92,92,.12);border:1px solid var(--danger);color:#FFD3D3;padding:12px 14px;border-radius:10px;font-size:13px;margin-bottom:18px;line-height:1.5;}
 
-/* ── Shell ─────────────────────────────────── */
-#app{display:flex;flex-direction:column;height:100dvh}
+  /* ---------- Game ---------- */
+  #game{padding-top:14px;}
+  .game-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+  .end-link{color:var(--text-muted);font-size:13px;background:none;border:none;cursor:pointer;padding:6px;}
+  .hud{display:flex;justify-content:space-between;font-family:var(--mono);font-size:13px;color:var(--text-muted);margin-bottom:10px;}
+  .hud b{color:var(--text);}
 
-/* ── Header ────────────────────────────────── */
-.hdr{
-  background:var(--surf);border-bottom:1px solid var(--bdr);
-  padding:10px 14px 8px;padding-top:max(10px,env(safe-area-inset-top));
-  position:sticky;top:0;z-index:50
-}
-.hdr-r1,.hdr-r2{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.brand{font-size:17px;font-weight:800;color:var(--pri);letter-spacing:-.3px}
-.hdr-btns{display:flex;gap:6px}
-.ico-btn{
-  background:var(--surf2);border:none;border-radius:8px;
-  padding:7px 10px;font-size:16px;cursor:pointer;line-height:1;transition:background .15s
-}
-.ico-btn:hover{background:var(--bdr)}
-.dtog{display:flex;background:var(--surf2);border-radius:20px;padding:3px;gap:2px}
-.dtog button{
-  border:none;background:transparent;padding:5px 12px;border-radius:18px;
-  font-size:13px;font-weight:600;cursor:pointer;color:var(--mut);transition:all .2s
-}
-.dtog button.on{background:var(--pri);color:#fff}
-.badge{
-  display:inline-block;background:var(--star);color:#fff;
-  font-size:10px;font-weight:700;padding:1px 5px;border-radius:8px;margin-left:3px
-}
-.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none}
-.tabs::-webkit-scrollbar{display:none}
-.tabs button{
-  border:none;background:none;padding:5px 12px;border-radius:20px;
-  font-size:13px;font-weight:500;cursor:pointer;color:var(--mut);
-  white-space:nowrap;transition:all .18s;flex-shrink:0
-}
-.tabs button.on{background:var(--pri3);color:var(--pri);font-weight:700}
+  .pulse-wrap{position:relative;height:84px;background:var(--surface);border-radius:14px;overflow:hidden;margin-bottom:18px;}
+  .pulse-wrap svg{width:100%;height:100%;display:block;}
+  .pulse-wrap.spike{animation:spikeBounce .4s ease;}
+  @keyframes spikeBounce{0%{transform:scale(1)}30%{transform:scale(1.03)}100%{transform:scale(1)}}
+  .clock-badge{position:absolute;top:8px;right:10px;font-family:var(--mono);font-size:13px;background:rgba(0,0,0,.35);padding:3px 9px;border-radius:8px;}
 
-/* ── Main ──────────────────────────────────── */
-.main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
-.view{display:none;padding:16px;max-width:600px;margin:0 auto}
-.view.on{display:block}
-.empty{text-align:center;padding:56px 16px;color:var(--mut)}
-.empty .ico{font-size:44px;margin-bottom:12px}
-.empty p{font-size:15px;line-height:1.6}
+  .stage{flex:1;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px 4px;}
+  .target{font-weight:800;letter-spacing:-0.01em;}
+  .target.mode-word{font-size:clamp(34px,9vw,68px);}
+  .target.mode-sentence{font-size:clamp(20px,5vw,32px);line-height:1.4;max-width:95%;}
 
-/* ── Buttons ───────────────────────────────── */
-.btn{border:none;cursor:pointer;font-weight:600;transition:all .18s;border-radius:var(--rs);font-size:14px}
-.btn-ghost{background:var(--surf);border:1.5px solid var(--bdr);color:var(--txt);padding:9px 16px}
-.btn-ghost:hover{border-color:var(--pri);color:var(--pri)}
-.btn-pri{background:var(--pri);color:#fff;padding:10px 22px}
-.btn-pri:hover{background:var(--pri2)}
-.btn-pri:disabled{opacity:.4;cursor:default}
-.btn-star{background:var(--surf);border:1.5px solid var(--bdr);color:var(--mut);padding:9px 18px;display:flex;align-items:center;gap:6px}
-.btn-star.on{border-color:var(--star);color:var(--star);background:#FEF8ED}
-[data-theme=dark] .btn-star.on{background:#2B2010}
+  .heard-row{text-align:center;margin-bottom:18px;min-height:26px;}
+  .heard-label{color:var(--text-muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-right:6px;}
+  .heard-text{font-family:var(--mono);font-size:15px;}
+  .heard-text.live{color:var(--accent);}
+  .heard-text.hit{color:var(--success);font-weight:700;}
+  .heard-text.miss{color:var(--danger);}
+  .heard-text.error{color:var(--warning);}
+  .heard-text.idle{color:var(--text-muted);}
 
-/* ── Progress ──────────────────────────────── */
-.prog{height:5px;background:var(--surf2);border-radius:3px;margin-bottom:18px;overflow:hidden}
-.prog-fill{height:100%;background:var(--pri);border-radius:3px;transition:width .4s ease}
+  .mic-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding-bottom:6px;}
+  .mic-btn{width:clamp(120px,32vw,160px);height:clamp(120px,32vw,160px);border-radius:50%;border:3px solid var(--accent);background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-size:clamp(40px,10vw,56px);cursor:pointer;touch-action:none;user-select:none;-webkit-user-select:none;transition:transform .1s, box-shadow .15s, background .15s;}
+  .mic-btn.active{background:var(--accent);transform:scale(1.06);box-shadow:0 0 0 14px rgba(45,212,196,.15);}
+  .mic-btn.checking{background:var(--surface-2);border-color:var(--warning);opacity:.6;cursor:wait;pointer-events:none;animation:checkingPulse 0.9s ease-in-out infinite;}
+  @keyframes checkingPulse{0%,100%{opacity:.55;}50%{opacity:.85;}}
+  .mic-hint{color:var(--text-muted);font-size:13px;text-align:center;}
+  .score-line{text-align:center;font-family:var(--mono);font-size:13px;color:var(--text-muted);margin-top:14px;}
 
-/* ── Browse ────────────────────────────────── */
-.search{
-  width:100%;padding:10px 16px;border:1.5px solid var(--bdr);border-radius:24px;
-  font-size:15px;background:var(--surf);color:var(--txt);outline:none;
-  margin-bottom:12px;transition:border-color .2s
-}
-.search:focus{border-color:var(--pri)}
-.search::placeholder{color:var(--mut)}
-.pills{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin-bottom:14px}
-.pills::-webkit-scrollbar{display:none}
-.pill{
-  border:1.5px solid var(--bdr);background:var(--surf);padding:4px 13px;
-  border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;
-  white-space:nowrap;color:var(--mut);transition:all .18s
-}
-.pill.on{border-color:var(--pri);background:var(--pri3);color:var(--pri)}
-.blist{display:flex;flex-direction:column;gap:8px}
-.bcard{
-  background:var(--surf);border-radius:var(--r);padding:13px 14px 13px 18px;
-  display:flex;align-items:flex-start;gap:10px;border-left:4px solid #bbb;
-  box-shadow:var(--sh);cursor:pointer;transition:box-shadow .2s
-}
-.bcard:hover{box-shadow:var(--shl)}
-.bcard-body{flex:1;min-width:0}
-.bterm{font-size:15px;font-weight:700}
-.bdef,.bex{display:none}
-.bdef{font-size:13px;color:var(--mut);margin-top:5px;line-height:1.5}
-.bex{font-size:12px;color:var(--mut);font-style:italic;margin-top:3px}
-.bcard.open .bdef,.bcard.open .bex{display:block}
-.btag{
-  display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;
-  text-transform:uppercase;padding:2px 8px;border-radius:10px;margin-top:5px
-}
-.star{
-  background:none;border:none;font-size:22px;cursor:pointer;
-  padding:0 2px;color:#ccc;transition:color .2s,transform .12s;flex-shrink:0
-}
-.star:active{transform:scale(.82)}
-.star.on{color:var(--star)}
+  /* ---------- End screen ---------- */
+  #end{align-items:center;justify-content:center;text-align:center;}
+  .end-title{font-size:clamp(28px,7vw,42px);font-weight:800;margin-bottom:6px;}
+  .end-stats{color:var(--text-muted);font-size:16px;margin-bottom:30px;}
+  .end-btns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+  .end-btns button{padding:14px 22px;border-radius:12px;font-weight:700;font-size:15px;cursor:pointer;border:2px solid var(--surface-2);background:var(--surface);color:var(--text);}
+  .end-btns button.primary{background:var(--accent);border-color:var(--accent);color:#0A1020;}
 
-/* ── Flashcards ────────────────────────────── */
-.fc-wrap{display:flex;flex-direction:column;align-items:center;gap:18px}
-.fc-meta{display:flex;justify-content:space-between;align-items:center;width:100%}
-.fc-ctr{font-size:13px;color:var(--mut);font-weight:600}
-.c3d{perspective:1000px;width:100%;max-width:420px;height:260px;cursor:pointer;user-select:none}
-.c3d-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .55s cubic-bezier(.4,0,.2,1)}
-.c3d.flipped .c3d-inner{transform:rotateY(180deg)}
-.cface{
-  position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;
-  border-radius:var(--r);display:flex;flex-direction:column;
-  justify-content:center;align-items:center;padding:28px 24px;text-align:center
-}
-.cface.front{background:var(--surf);box-shadow:var(--shl);border:1px solid var(--bdr)}
-.cface.back{
-  transform:rotateY(180deg);background-color:var(--cb);
-  background-image:repeating-linear-gradient(transparent,transparent 27px,var(--cl) 27px,var(--cl) 28px);
-  border:1px solid var(--cbr);box-shadow:var(--shl)
-}
-.cterm{font-size:34px;font-weight:800;color:var(--pri);letter-spacing:-.5px;line-height:1.1}
-.chint{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.1em;margin-top:14px}
-.cdef{font-size:18px;font-weight:500;line-height:1.45;position:relative;z-index:1}
-.cex{font-size:13px;font-style:italic;color:var(--mut);margin-top:12px;line-height:1.5;position:relative;z-index:1}
-.fc-nav{display:flex;gap:10px;align-items:center}
-
-/* ── Learn ─────────────────────────────────── */
-.defcard{
-  background:var(--surf);border-radius:var(--r);padding:24px;text-align:center;
-  border:1px solid var(--bdr);box-shadow:var(--sh);margin-bottom:18px
-}
-.deflabel{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:10px}
-.deftext{font-size:19px;font-weight:500;line-height:1.45}
-.defex{font-size:13px;font-style:italic;color:var(--mut);margin-top:10px}
-.ainput{
-  width:100%;padding:14px 18px;border:2px solid var(--bdr);border-radius:var(--r);
-  font-size:18px;text-align:center;outline:none;background:var(--surf);color:var(--txt);
-  transition:border-color .2s;margin-bottom:12px
-}
-.ainput:focus{border-color:var(--pri)}
-.ainput.ok{border-color:var(--ok);background:var(--okb)}
-.ainput.bad{border-color:var(--err);background:var(--errb)}
-.fb{text-align:center;font-size:15px;min-height:22px;margin-bottom:14px}
-.fb.ok{color:var(--ok);font-weight:600}
-.fb.bad{color:var(--err)}
-.arow{display:flex;gap:8px;justify-content:center}
-
-/* ── Match ─────────────────────────────────── */
-.match-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
-.match-lbl{font-size:13px;font-weight:700;color:var(--mut)}
-.match-tmr{font-size:24px;font-weight:800;color:var(--pri);font-variant-numeric:tabular-nums}
-.match-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.mtile{
-  background:var(--surf);border:2px solid var(--bdr);border-radius:var(--rs);
-  padding:12px 10px;text-align:center;font-size:13px;line-height:1.4;
-  cursor:pointer;min-height:66px;display:flex;align-items:center;justify-content:center;
-  transition:border-color .15s,background .15s;word-break:break-word;color:var(--txt)
-}
-.mtile:hover:not(.done):not(.sel){border-color:#999}
-.mtile.sel{border-color:var(--pri);background:var(--pri3)}
-.mtile.done{border-color:var(--ok);background:var(--okb);color:var(--ok);pointer-events:none;opacity:.55}
-.mtile.shake{animation:shake .38s;border-color:var(--err);background:var(--errb)}
-@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-7px)}40%{transform:translateX(7px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
-
-/* ── Quiz ──────────────────────────────────── */
-.quiz-q{
-  background:var(--surf);border-radius:var(--r);padding:26px 22px;text-align:center;
-  border:1px solid var(--bdr);box-shadow:var(--sh);margin-bottom:18px
-}
-.quiz-qlbl{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);margin-bottom:10px}
-.quiz-term{font-size:28px;font-weight:800;color:var(--pri);letter-spacing:-.3px}
-.quiz-opts{display:flex;flex-direction:column;gap:9px}
-.qopt{
-  background:var(--surf);border:2px solid var(--bdr);border-radius:var(--rs);
-  padding:13px 16px;font-size:14px;line-height:1.4;text-align:left;
-  cursor:pointer;color:var(--txt);transition:border-color .15s,background .15s
-}
-.qopt:hover:not(.locked){border-color:var(--pri);background:var(--pri3)}
-.qopt.correct{border-color:var(--ok)!important;background:var(--okb)!important;color:var(--ok);font-weight:600}
-.qopt.wrong{border-color:var(--err)!important;background:var(--errb)!important;color:var(--err)}
-.qopt.locked{cursor:default}
-
-/* ── Marathon ──────────────────────────────── */
-.mrt-intro{text-align:center;padding:24px 16px}
-.mrt-hero{font-size:64px;margin-bottom:14px}
-.mrt-intro h2{font-size:26px;font-weight:800;color:var(--pri);margin-bottom:10px}
-.mrt-intro p{color:var(--mut);font-size:15px;line-height:1.7;margin-bottom:4px}
-.mrt-n{font-size:20px;font-weight:800;color:var(--pri);margin:18px 0 24px}
-.mrt-bar{
-  background:var(--surf);border-radius:var(--r);padding:11px 16px;margin-bottom:16px;
-  border:1px solid var(--bdr);box-shadow:var(--sh);display:flex;justify-content:space-between;align-items:center
-}
-.mrt-bar-lbl{font-size:13px;font-weight:700}
-.mrt-dots{display:flex;gap:7px}
-.mrt-dot{width:11px;height:11px;border-radius:50%;background:var(--surf2);border:1.5px solid var(--bdr);transition:all .3s}
-.mrt-dot.done{background:var(--ok);border-color:var(--ok)}
-.mrt-dot.active{background:var(--pri);border-color:var(--pri)}
-.mrt-trans{
-  background:var(--surf);border-radius:var(--r);padding:40px 24px;
-  text-align:center;border:1px solid var(--bdr);box-shadow:var(--sh)
-}
-.mrt-t-ico{font-size:52px;margin-bottom:12px}
-.mrt-t-head{font-size:20px;font-weight:800;margin-bottom:8px}
-.mrt-t-score{font-size:40px;font-weight:900;color:var(--pri);margin-bottom:6px;letter-spacing:-1px}
-.mrt-t-sub{font-size:14px;color:var(--mut);margin-bottom:20px}
-.mrt-t-next{font-size:15px;font-weight:700;margin-bottom:24px}
-
-/* ── Results ───────────────────────────────── */
-.res-card{
-  background:var(--surf);border-radius:var(--r);padding:40px 24px;
-  text-align:center;border:1px solid var(--bdr);box-shadow:var(--sh)
-}
-.res-ico{font-size:48px;margin-bottom:10px}
-.res-score{font-size:56px;font-weight:900;color:var(--pri);line-height:1;letter-spacing:-2px}
-.res-sub{color:var(--mut);font-size:15px;margin:8px 0 20px}
-.res-table{margin-bottom:24px;text-align:left}
-.res-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--bdr);font-size:14px}
-.res-row:last-child{border:none}
-.res-row span:last-child{font-weight:700;color:var(--pri)}
-.res-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-
-/* ── Modal ─────────────────────────────────── */
-#modal{display:none;position:fixed;inset:0;z-index:200;align-items:center;justify-content:center;padding:16px}
-#modal.open{display:flex}
-.mbg{position:absolute;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-.mbox{
-  position:relative;background:var(--surf);border-radius:var(--r);padding:28px 22px;
-  max-width:400px;width:100%;text-align:center;box-shadow:0 12px 48px rgba(0,0,0,.25);
-  z-index:1;max-height:90vh;overflow-y:auto
-}
-
-/* ── Scoreboard ────────────────────────────── */
-.sc-title{font-size:20px;font-weight:800;margin-bottom:18px}
-.sc-section{margin-bottom:16px;text-align:left}
-.sc-head{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.1em;color:var(--mut);margin-bottom:6px}
-.sc-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bdr);font-size:13px;gap:8px}
-.sc-row:last-child{border:none}
-.sc-lbl{flex:1}
-.sc-val{font-weight:700;color:var(--pri)}
-.sc-date{color:var(--mut);font-size:11px;white-space:nowrap}
-.sc-empty{color:var(--mut);font-size:13px;font-style:italic;padding:4px 0}
-
-/* ── Utils ─────────────────────────────────── */
-.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}.mt24{margin-top:24px}
-.ct{text-align:center}
+  @media (prefers-reduced-motion: reduce){
+    .pulse-wrap.spike{animation:none;}
+    .mic-btn{transition:none;}
+    .mic-btn.checking{animation:none;}
+  }
 </style>
 </head>
 <body>
 <div id="app">
-  <header class="hdr">
-    <div class="hdr-r1">
-      <div class="brand">📚 Vocab Cards</div>
-      <div class="hdr-btns">
-        <button class="ico-btn" id="themeBtn" onclick="toggleTheme()" title="Dark mode">🌙</button>
-        <button class="ico-btn" onclick="showScores()" title="Scoreboard">🏆</button>
-      </div>
-    </div>
-    <div class="hdr-r2">
-      <div class="dtog">
-        <button class="on" onclick="setFilter('all')">All</button>
-        <button onclick="setFilter('mine')">★ My Deck<span class="badge" id="myBadge">0</span></button>
-      </div>
-    </div>
-    <div class="tabs">
-      <button class="on"  onclick="setMode('browse')">Browse</button>
-      <button onclick="setMode('flashcards')">Cards</button>
-      <button onclick="setMode('learn')">Learn</button>
-      <button onclick="setMode('match')">Match</button>
-      <button onclick="setMode('quiz')">Quiz</button>
-      <button onclick="setMode('marathon')">🏃 Session</button>
-    </div>
-  </header>
-  <main class="main">
-    <div id="view-browse"     class="view on"></div>
-    <div id="view-flashcards" class="view"></div>
-    <div id="view-learn"      class="view"></div>
-    <div id="view-match"      class="view"></div>
-    <div id="view-quiz"       class="view"></div>
-    <div id="view-marathon"   class="view"></div>
-  </main>
-</div>
 
-<div id="modal">
-  <div class="mbg" onclick="closeModal()"></div>
-  <div class="mbox" id="mbox"></div>
+  <!-- ===================== SETUP SCREEN ===================== -->
+  <section id="setup" class="screen active">
+    <h1 class="title">Pulse Check</h1>
+    <p class="tagline">Say it clearly enough, and the clock holds its breath.</p>
+
+    <div id="unsupportedWarning" class="warn-banner" style="display:none;">
+      This browser doesn't support speech recognition. Use Chrome, Edge, or Safari (14.5+ on iPhone/iPad). Firefox is not supported.
+    </div>
+
+    <div class="field">
+      <label>Practice mode</label>
+      <div class="toggle-row">
+        <label><input type="radio" name="mode" value="word" checked><span class="toggle-btn">Words</span></label>
+        <label><input type="radio" name="mode" value="sentence"><span class="toggle-btn">Sentences (read-aloud)</span></label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label id="listLabel">Word list</label>
+      <textarea id="listInput" spellcheck="false"></textarea>
+      <div class="hint-text" id="listHint"></div>
+    </div>
+
+    <div class="field">
+      <div class="num-row">
+        <div>
+          <label style="margin-bottom:4px;">Round length</label>
+          <div id="roundLengthDisplay" class="round-length-display"></div>
+        </div>
+        <div class="check-row" style="margin-top:18px;">
+          <input type="checkbox" id="shuffleCheck" checked>
+          <label style="margin:0;text-transform:none;font-size:14px;color:var(--text-muted);">Shuffle order</label>
+        </div>
+      </div>
+    </div>
+
+    <button id="startBtn" class="start-btn">Start round</button>
+  </section>
+
+  <!-- ===================== GAME SCREEN ===================== -->
+  <section id="game" class="screen">
+    <div class="game-top">
+      <button class="end-link" id="quitBtn">✕ End round</button>
+      <span class="end-link" id="modeLabel"></span>
+    </div>
+
+    <div class="hud">
+      <span>Item <b id="progressText">0/0</b></span>
+      <span>Cleared <b id="clearedText">0</b></span>
+    </div>
+
+    <div class="pulse-wrap" id="pulseWrap">
+      <svg viewBox="0 0 1000 120" preserveAspectRatio="none">
+        <path id="pulsePath" fill="none" stroke="#5FD068" stroke-width="5" stroke-linecap="round"/>
+      </svg>
+      <div class="clock-badge" id="clockBadge">1:15</div>
+    </div>
+
+    <div class="stage">
+      <div class="target" id="targetText"></div>
+    </div>
+
+    <div class="heard-row">
+      <span class="heard-label">Heard:</span>
+      <span class="heard-text idle" id="heardText" aria-live="polite">—</span>
+    </div>
+
+    <div class="mic-wrap">
+      <button class="mic-btn" id="micBtn" aria-label="Hold to speak">🎤</button>
+      <div class="mic-hint">Press and hold, say it clearly, then let go</div>
+    </div>
+  </section>
+
+  <!-- ===================== END SCREEN ===================== -->
+  <section id="end" class="screen">
+    <div class="end-title" id="endTitle">Time's up</div>
+    <div class="end-stats" id="endStats"></div>
+    <div class="end-btns">
+      <button id="playAgainBtn" class="primary">Play again</button>
+      <button id="backToSetupBtn">Back to setup</button>
+    </div>
+  </section>
+
 </div>
 
 <script>
-/* ─── STATE ─────────────────────────────────── */
-let ALL=[], myDeck=new Set(), flt='all', mode='browse', cat='all';
+(function(){
+  "use strict";
 
-let fc  = {order:[],idx:0};
-let lrn = {cards:[],order:[],idx:0,answers:{},locked:false,onDone:null};
-let mch = {cards:[],pool:[],tiles:[],sel:null,done:new Set(),iv:null,secs:0,onDone:null};
-let qz  = {cards:[],order:[],idx:0,answers:{},locked:false,onDone:null};
-let mrt = {active:false,cards:[],startMs:0,lRes:null,qRes:null,mSecs:0};
-
-/* ─── BOOT ──────────────────────────────────── */
-(function boot(){
-  initTheme();
-  try{
-    const s=JSON.parse(localStorage.getItem('vc_deck')||'[]');
-    myDeck=new Set(s.filter(x=>typeof x==='string'));
-  }catch(_){}
-  fetch('./cards.csv').then(r=>r.text())
-    .then(t=>{const{data}=Papa.parse(t,{header:true,skipEmptyLines:true});ALL=data.filter(r=>r.term&&r.definition);})
-    .catch(()=>{ALL=sample();})
-    .finally(()=>{badge();renderBrowse();});
-  if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
-})();
-
-/* ─── HELPERS ───────────────────────────────── */
-const esc=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-const empty=(msg,sub='')=>`<div class="empty"><div class="ico">📭</div><p>${msg}</p>${sub?`<p style="margin-top:8px;font-size:13px">${sub}</p>`:''}</div>`;
-const CCOLS=['#1B6B72','#7B4FAD','#2E7D5A','#C06430','#3B5FA0','#9E3B6B'];
-function catColor(n){let h=0;for(const c of String(n))h=(h*31+c.charCodeAt(0))&0xFFFF;return CCOLS[Math.abs(h)%CCOLS.length];}
-function lev(a,b){const m=a.length,n=b.length;const d=Array.from({length:m+1},(_,i)=>Array.from({length:n+1},(_,j)=>i?j?0:i:j));for(let i=1;i<=m;i++)for(let j=1;j<=n;j++)d[i][j]=a[i-1]===b[j-1]?d[i-1][j-1]:1+Math.min(d[i-1][j],d[i][j-1],d[i-1][j-1]);return d[m][n];}
-const fmtT=s=>`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
-const shuf=a=>[...a].sort(()=>Math.random()-.5);
-const pct=(n,t)=>Math.round(n/t*100);
-const starIco=p=>p>=90?'🌟':p>=70?'⭐':'💪';
-
-// Replace the target word in an example sentence with blanks during testing.
-// Handles exact matches, conjugations (make→making), and split phrases (make progress→making...progress).
-function maskTerm(sentence, term){
-  if(!sentence||!term) return sentence;
-  let result = sentence;
-  // 1. Blank the full term as written (catches exact phrase matches)
-  const escaped = term.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-  result = result.replace(new RegExp(escaped,'gi'),'_____');
-  // 2. Blank each content word (length >= 4) with stem matching,
-  //    so "make" catches "making/made", "progress" catches "progress/progressing" etc.
-  term.split(/\s+/).filter(w=>w.length>=4).forEach(word=>{
-    const we = word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-    result = result.replace(new RegExp('\\b'+we+'\\w*\\b','gi'),'_____');
-  });
-  return result;
-}
-
-/* ─── THEME ─────────────────────────────────── */
-function initTheme(){applyTheme(localStorage.getItem('vc_theme')||'light');}
-function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
-function applyTheme(t){
-  document.documentElement.setAttribute('data-theme',t);
-  document.getElementById('themeBtn').textContent=t==='dark'?'☀️':'🌙';
-  document.getElementById('tcMeta').content=t==='dark'?'#0F1117':'#1B6B72';
-  localStorage.setItem('vc_theme',t);
-}
-
-/* ─── ROUTING ───────────────────────────────── */
-const MODES=['browse','flashcards','learn','match','quiz','marathon'];
-function setMode(m){
-  clearInterval(mch.iv); mch.iv=null;
-  mode=m;
-  document.querySelectorAll('.tabs button').forEach((b,i)=>b.classList.toggle('on',MODES[i]===m));
-  document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
-  document.getElementById('view-'+m).classList.add('on');
-  if(m==='browse')     renderBrowse();
-  else if(m==='flashcards') buildFlash();
-  else if(m==='learn') buildLearn();
-  else if(m==='match') buildMatch();
-  else if(m==='quiz')  buildQuiz();
-  else if(m==='marathon') buildMarathon();
-}
-function setFilter(f){
-  flt=f;
-  document.querySelectorAll('.dtog button').forEach((b,i)=>b.classList.toggle('on',(i===0&&f==='all')||(i===1&&f==='mine')));
-  setMode(mode);
-}
-
-/* ─── DECK ──────────────────────────────────── */
-function getCards(){
-  let c=flt==='mine'?ALL.filter(r=>myDeck.has(r.term)):[...ALL];
-  if(cat!=='all')c=c.filter(r=>(r.category||'')===cat);
-  return c;
-}
-function toggleStar(term){myDeck.has(term)?myDeck.delete(term):myDeck.add(term);localStorage.setItem('vc_deck',JSON.stringify([...myDeck]));badge();return myDeck.has(term);}
-function badge(){document.getElementById('myBadge').textContent=myDeck.size;}
-
-/* ─── SCORES ────────────────────────────────── */
-function loadSc(){try{return JSON.parse(localStorage.getItem('vc_scores')||'{}');}catch(_){return{};}}
-function saveSc(type,entry){
-  const s=loadSc(); if(!s[type])s[type]=[];
-  s[type].unshift({...entry,date:new Date().toLocaleDateString()});
-  if(type==='match'||type==='marathon') s[type].sort((a,b)=>a.secs-b.secs);
-  else s[type].sort((a,b)=>b.pct-a.pct);
-  s[type]=s[type].slice(0,10);
-  localStorage.setItem('vc_scores',JSON.stringify(s));
-}
-function showScores(){
-  const s=loadSc();
-  const rows=(arr,t)=>{
-    if(!arr?.length) return '<div class="sc-empty">No scores yet — play a round!</div>';
-    return arr.slice(0,5).map(e=>{
-      if(t==='match')    return `<div class="sc-row"><span class="sc-lbl">${e.pairs} cards</span><span class="sc-val">${fmtT(e.secs)}</span><span class="sc-date">${e.date}</span></div>`;
-      if(t==='marathon') return `<div class="sc-row"><span class="sc-lbl">${e.accuracy}% accuracy</span><span class="sc-val">${fmtT(e.secs)}</span><span class="sc-date">${e.date}</span></div>`;
-      return `<div class="sc-row"><span class="sc-lbl">${e.score}/${e.total}</span><span class="sc-val">${e.pct}%</span><span class="sc-date">${e.date}</span></div>`;
-    }).join('');
+  /* ============================================================
+     TEACHER CONFIG — edit these before each class.
+     Round lengths: every student gets the exact same value, so
+     scores stay comparable when you write them on the board.
+     No UI control for these on purpose.
+     ============================================================ */
+  var CONFIG = {
+    wordRoundSeconds: 75,       // round length when "Words" mode is selected
+    sentenceRoundSeconds: 150,  // round length when "Sentences" mode is selected
+    releaseBufferMs: 300        // grace period after releasing the mic button
+                                 // before recognition actually stops — avoids
+                                 // cutting off the tail end of a word
   };
-  showModal(`<div class="sc-title">🏆 Scoreboard</div>
-    <div class="sc-section"><div class="sc-head">📖 Learn</div>${rows(s.learn,'learn')}</div>
-    <div class="sc-section"><div class="sc-head">❓ Quiz</div>${rows(s.quiz,'quiz')}</div>
-    <div class="sc-section"><div class="sc-head">🔀 Match <small style="font-weight:400">(fastest first)</small></div>${rows(s.match,'match')}</div>
-    <div class="sc-section"><div class="sc-head">🏃 Study Session</div>${rows(s.marathon,'marathon')}</div>
-    <div style="display:flex;gap:8px;justify-content:center;margin-top:16px;flex-wrap:wrap">
-      <button class="btn btn-ghost" onclick="closeModal()">Close</button>
-      <button class="btn btn-ghost" style="color:var(--err);border-color:var(--err)"
-        onclick="if(confirm('Clear all scores?')){localStorage.removeItem('vc_scores');closeModal();}">Clear all</button>
-    </div>`);
-}
 
-/* ─── MODAL ─────────────────────────────────── */
-function showModal(h){document.getElementById('mbox').innerHTML=h;document.getElementById('modal').classList.add('open');}
-function closeModal(){document.getElementById('modal').classList.remove('open');}
+  /* ---------------- Sample content ---------------- */
+  var SAMPLE_WORDS =
+"photosynthesis|hard\n" +
+"particularly|hard\n" +
+"comfortable|medium\n" +
+"vegetable|medium\n" +
+"necessary|hard\n" +
+"schedule|hard\n" +
+"library|medium\n" +
+"through|medium\n" +
+"cat|easy\n" +
+"dog|easy";
 
-/* ─── RESULT CARD ───────────────────────────── */
-function resHTML(icon,score,sub,rows,retryFn,homeFn){
-  return`<div class="res-card">
-    <div class="res-ico">${icon}</div>
-    <div class="res-score">${score}</div>
-    <div class="res-sub">${sub}</div>
-    <div class="res-table">${rows.map(([l,v])=>`<div class="res-row"><span>${l}</span><span>${v}</span></div>`).join('')}</div>
-    <div class="res-btns">
-      <button class="btn btn-ghost" onclick="${homeFn}">Browse</button>
-      <button class="btn btn-pri" onclick="${retryFn}">Try Again</button>
-    </div></div>`;
-}
+  var SAMPLE_SENTENCES =
+"Q: What do you usually do on weekends?\n" +
+"A: I usually play soccer with my friends.\n" +
+"Q: What is your favorite subject at school?\n" +
+"A: My favorite subject is English because it is fun.\n" +
+"Q: How do you get to school every day?\n" +
+"A: I get to school by bike every day.";
 
-/* ─── BROWSE ────────────────────────────────── */
-function renderBrowse(){
-  const el=document.getElementById('view-browse');
-  if(!el.querySelector('.search')){
-    el.innerHTML=`<input class="search" id="searchBox" placeholder="Search cards…" oninput="renderBrowse()">
-      <div class="pills" id="catPills"></div><div class="blist" id="bList"></div>`;
+  /* ---------------- DOM refs ---------------- */
+  var screens = {
+    setup: document.getElementById('setup'),
+    game: document.getElementById('game'),
+    end: document.getElementById('end')
+  };
+  var listInput = document.getElementById('listInput');
+  var listLabel = document.getElementById('listLabel');
+  var listHint = document.getElementById('listHint');
+  var roundLengthDisplay = document.getElementById('roundLengthDisplay');
+  var shuffleCheck = document.getElementById('shuffleCheck');
+  var startBtn = document.getElementById('startBtn');
+  var unsupportedWarning = document.getElementById('unsupportedWarning');
+
+  var quitBtn = document.getElementById('quitBtn');
+  var modeLabel = document.getElementById('modeLabel');
+  var progressText = document.getElementById('progressText');
+  var clearedText = document.getElementById('clearedText');
+  var pulseWrap = document.getElementById('pulseWrap');
+  var pulsePath = document.getElementById('pulsePath');
+  var clockBadge = document.getElementById('clockBadge');
+  var targetText = document.getElementById('targetText');
+  var heardText = document.getElementById('heardText');
+  var micBtn = document.getElementById('micBtn');
+
+  var endTitle = document.getElementById('endTitle');
+  var endStats = document.getElementById('endStats');
+  var playAgainBtn = document.getElementById('playAgainBtn');
+  var backToSetupBtn = document.getElementById('backToSetupBtn');
+
+  var modeRadios = document.querySelectorAll('input[name=mode]');
+
+  /* ---------------- Speech recognition setup ---------------- */
+  var SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
+  var SR_SUPPORTED = !!SpeechRecognitionImpl;
+  var recognition = null;
+  if (SR_SUPPORTED) {
+    recognition = new SpeechRecognitionImpl();
+    recognition.lang = 'en-US';
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+  } else {
+    unsupportedWarning.style.display = 'block';
+    startBtn.disabled = true;
   }
-  const q=(document.getElementById('searchBox')?.value||'').toLowerCase();
-  const cats=['all',...new Set(ALL.map(c=>c.category).filter(Boolean))];
-  document.getElementById('catPills').innerHTML=cats.map(c=>
-    `<button class="pill${c===cat?' on':''}" onclick="setCat('${esc(c)}')">${c==='all'?'All':esc(c)}</button>`
-  ).join('');
-  let cards=getCards();
-  if(q)cards=cards.filter(c=>c.term.toLowerCase().includes(q)||c.definition.toLowerCase().includes(q));
-  const list=document.getElementById('bList');
-  if(!cards.length){list.innerHTML=flt==='mine'?empty('Your deck is empty.','Tap ☆ on any card to add it here.'):empty('No cards found.');return;}
-  list.innerHTML=cards.map(card=>{
-    const col=card.category?catColor(card.category):'#999';
-    const on=myDeck.has(card.term);
-    return`<div class="bcard" style="border-left-color:${col}" onclick="openCard(this)">
-      <div class="bcard-body">
-        <div class="bterm">${esc(card.term)}</div>
-        <div class="bdef">${esc(card.definition)}</div>
-        ${card.example?`<div class="bex">"${esc(card.example)}"</div>`:''}
-        ${card.category?`<span class="btag" style="background:${col}22;color:${col}">${esc(card.category)}</span>`:''}
-      </div>
-      <button class="star${on?' on':''}" onclick="event.stopPropagation();bStar('${esc(card.term)}',this)">${on?'★':'☆'}</button>
-    </div>`;
-  }).join('');
-}
-function setCat(c){cat=c;renderBrowse();}
-function openCard(el){el.classList.toggle('open');}
-function bStar(term,btn){const on=toggleStar(term);btn.classList.toggle('on',on);btn.textContent=on?'★':'☆';if(flt==='mine')renderBrowse();}
 
-/* ─── FLASHCARDS ────────────────────────────── */
-function buildFlash(){
-  const cards=getCards(),el=document.getElementById('view-flashcards');
-  if(!cards.length){el.innerHTML=flt==='mine'?empty('Your deck is empty.','Star cards in Browse first.'):empty('No cards.');return;}
-  el.innerHTML=`<div class="fc-wrap">
-    <div class="fc-meta"><span class="fc-ctr" id="fcCtr">—</span><button class="btn btn-ghost" onclick="shuffleFC()">⇄ Shuffle</button></div>
-    <div class="c3d" id="fcCard" onclick="flipFC()">
-      <div class="c3d-inner">
-        <div class="cface front"><div class="cterm" id="fcTerm"></div><div class="chint">tap to flip</div></div>
-        <div class="cface back"><div class="cdef" id="fcDef"></div><div class="cex" id="fcEx"></div></div>
-      </div>
-    </div>
-    <div class="fc-nav">
-      <button class="btn btn-ghost" onclick="fcMove(-1)">← Prev</button>
-      <button class="btn btn-ghost" onclick="fcMove(1)">Next →</button>
-    </div>
-    <button class="btn btn-star" id="fcStar" onclick="fcStar()"><span id="fcSI">☆</span><span id="fcSL">Add to My Deck</span></button>
-  </div>`;
-  fc.order=cards.map((_,i)=>i); fc.idx=0; renderFC();
-}
-function renderFC(){
-  const cards=getCards(),card=cards[fc.order[fc.idx]],on=myDeck.has(card.term);
-  document.getElementById('fcTerm').textContent=card.term;
-  document.getElementById('fcDef').textContent=card.definition;
-  document.getElementById('fcEx').textContent=card.example?`"${card.example}"`:'' ;
-  document.getElementById('fcCtr').textContent=`${fc.idx+1} / ${cards.length}`;
-  document.getElementById('fcCard').classList.remove('flipped');
-  document.getElementById('fcSI').textContent=on?'★':'☆';
-  document.getElementById('fcSL').textContent=on?'In My Deck':'Add to My Deck';
-  document.getElementById('fcStar').classList.toggle('on',on);
-}
-function flipFC(){document.getElementById('fcCard').classList.toggle('flipped');}
-function fcMove(d){const n=getCards().length;fc.idx=(fc.idx+d+n)%n;renderFC();}
-function shuffleFC(){fc.order=shuf(fc.order);fc.idx=0;renderFC();}
-function fcStar(){toggleStar(getCards()[fc.order[fc.idx]].term);renderFC();}
+  /* ---------------- Game state ---------------- */
+  var state = {
+    mode: 'word',
+    list: [],
+    index: 0,
+    cleared: 0,
+    totalMs: 75000,
+    remainingMs: 75000,
+    pausedUntil: 0,
+    running: false,
+    listening: false,
+    busy: false
+  };
+  var lastFinalTranscript = '';
+  var tickHandle = null;
+  var watchdogHandle = null;
 
-/* ─── LEARN ─────────────────────────────────── */
-function learnHTML(){
-  return`<div class="prog"><div class="prog-fill" id="lProg" style="width:0%"></div></div>
-    <div class="defcard"><div class="deflabel">Definition</div><div class="deftext" id="lDef"></div><div class="defex" id="lEx"></div></div>
-    <input class="ainput" id="lInput" placeholder="Type the term…" onkeydown="if(event.key==='Enter')checkLearn()">
-    <div class="fb" id="lFb"></div>
-    <div class="arow"><button class="btn btn-ghost" id="lSkip" onclick="nextLearn()">Skip</button><button class="btn btn-pri" id="lCheck" onclick="checkLearn()">Check</button></div>`;
-}
-function buildLearn(cards,onDone){
-  cards=cards||getCards();
-  const el=document.getElementById('view-learn');
-  if(!cards.length){el.innerHTML=flt==='mine'?empty('Your deck is empty.','Star cards first.'):empty('No cards.');return;}
-  el.innerHTML=learnHTML();
-  lrn={cards,order:shuf([...Array(cards.length).keys()]),idx:0,answers:{},locked:false,onDone:onDone||null};
-  renderLearn();
-}
-function renderLearn(){
-  if(lrn.idx>=lrn.cards.length){endLearn();return;}
-  const card=lrn.cards[lrn.order[lrn.idx]];
-  document.getElementById('lDef').textContent=card.definition;
-  document.getElementById('lEx').textContent=card.example?`"${maskTerm(card.example,card.term)}"`:'' ;
-  document.getElementById('lInput').value='';document.getElementById('lInput').className='ainput';
-  document.getElementById('lFb').textContent='';document.getElementById('lFb').className='fb';
-  document.getElementById('lCheck').textContent='Check';document.getElementById('lCheck').onclick=checkLearn;
-  document.getElementById('lSkip').style.display='';
-  document.getElementById('lProg').style.width=(lrn.idx/lrn.cards.length*100)+'%';
-  lrn.locked=false; setTimeout(()=>document.getElementById('lInput')?.focus(),50);
-}
-function checkLearn(){
-  if(lrn.locked){nextLearn();return;}
-  const card=lrn.cards[lrn.order[lrn.idx]];
-  const ans=document.getElementById('lInput').value.trim().toLowerCase();
-  const right=card.term.toLowerCase();
-  const ok=ans===right||lev(ans,right)<=(right.length>8?2:1);
-  lrn.answers[lrn.idx]=ok; lrn.locked=true;
-  document.getElementById('lInput').className='ainput '+(ok?'ok':'bad');
-  const fb=document.getElementById('lFb'); fb.className='fb '+(ok?'ok':'bad');
-  fb.innerHTML=ok?'✓ Correct!':`✗ <strong>${esc(card.term)}</strong>`;
-  document.getElementById('lCheck').textContent='Next →'; document.getElementById('lCheck').onclick=nextLearn;
-  document.getElementById('lSkip').style.display='none';
-}
-function nextLearn(){lrn.idx++;renderLearn();}
-function endLearn(){
-  const n=Object.values(lrn.answers).filter(Boolean).length,tot=lrn.cards.length,p=pct(n,tot);
-  if(lrn.onDone){lrn.onDone(n,tot,p);return;}
-  saveSc('learn',{score:n,total:tot,pct:p});
-  document.getElementById('view-learn').innerHTML=resHTML(starIco(p),`${n}/${tot}`,`${p}% correct`,[['Correct',n],['Missed',tot-n],['Accuracy',p+'%']],'buildLearn()',"setMode('browse')");
-}
+  /* ---------------- Helpers: matching ---------------- */
+  function normalize(str){
+    return (str || '').toLowerCase().replace(/[^\w\s']/g, '').replace(/\s+/g, ' ').trim();
+  }
 
-/* ─── MATCH ─────────────────────────────────── */
-function matchHTML(quitFn='buildMatch()',quitLabel='New Round'){
-  return`<div class="match-top">
-    <span class="match-lbl" id="mLbl">Match all pairs</span>
-    <span class="match-tmr" id="mTmr">0:00</span>
-  </div>
-  <div class="match-grid" id="mGrid"></div>
-  <div class="ct mt16"><button class="btn btn-ghost" onclick="${quitFn}">${quitLabel}</button></div>`;
-}
-function buildMatch(cards,onDone){
-  clearInterval(mch.iv); mch.iv=null;
-  cards=cards||getCards();
-  const el=document.getElementById('view-match');
-  if(cards.length<2){el.innerHTML=flt==='mine'?empty('Need at least 2 cards.','Star more cards.'):empty('Need at least 2 cards.');return;}
-  el.innerHTML=matchHTML();
-  mch={cards:[...cards],pool:[...cards].slice(6),tiles:[],sel:null,done:new Set(),iv:null,secs:0,onDone:onDone||null};
-  startMatchRound(cards.slice(0,6));
-}
-function startMatchRound(pool){
-  clearInterval(mch.iv);
-  const terms=pool.map((c,i)=>({id:i,text:c.term,kind:'T'}));
-  const defs =pool.map((c,i)=>({id:i,text:c.definition,kind:'D'}));
-  mch.tiles=shuf([...terms,...defs]); mch.sel=null; mch.done=new Set();
-  document.getElementById('mLbl').textContent=`Match ${pool.length} pairs`;
-  mch.iv=setInterval(()=>{mch.secs++;document.getElementById('mTmr').textContent=fmtT(mch.secs);},1000);
-  renderMatch();
-}
-function renderMatch(){
-  document.getElementById('mGrid').innerHTML=mch.tiles.map((t,i)=>{
-    let cls='mtile';
-    if(mch.done.has(t.id))cls+=' done';
-    if(mch.sel===i)cls+=' sel';
-    return`<div class="${cls}" data-i="${i}" onclick="pickTile(${i})">${esc(t.text)}</div>`;
-  }).join('');
-}
-function pickTile(i){
-  const t=mch.tiles[i]; if(mch.done.has(t.id))return;
-  if(mch.sel===null){mch.sel=i;renderMatch();return;}
-  if(mch.sel===i){mch.sel=null;renderMatch();return;}
-  const pi=mch.sel,pt=mch.tiles[pi]; mch.sel=null;
-  if(pt.id===t.id&&pt.kind!==t.kind){
-    mch.done.add(t.id); renderMatch();
-    if(mch.done.size===mch.tiles.length/2){
-      clearInterval(mch.iv); mch.iv=null;
-      if(mch.pool.length>0) showMatchContinue();
-      else endMatch();
+  function levenshtein(a, b){
+    var m = a.length, n = b.length;
+    if (m === 0) return n;
+    if (n === 0) return m;
+    var dp = [];
+    for (var i = 0; i <= m; i++){ dp.push(new Array(n+1).fill(0)); dp[i][0] = i; }
+    for (var j = 0; j <= n; j++) dp[0][j] = j;
+    for (i = 1; i <= m; i++){
+      for (j = 1; j <= n; j++){
+        if (a[i-1] === b[j-1]) dp[i][j] = dp[i-1][j-1];
+        else dp[i][j] = 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+      }
     }
-  }else{
-    renderMatch();
-    [i,pi].forEach(idx=>{
-      const el=document.querySelector(`[data-i="${idx}"]`);
-      if(!el)return; el.classList.add('shake'); setTimeout(()=>el.classList.remove('shake'),380);
+    return dp[m][n];
+  }
+
+  function wordsClose(a, b){
+    if (a === b) return true;
+    if (Math.min(a.length, b.length) <= 3) return a === b;
+    return levenshtein(a, b) <= 1;
+  }
+
+  // Allowed edit-distance is a flat, capped number rather than a percentage
+  // Allowed edit-distance scales UP with word length, not down. The
+  // recognizer's own transcription accuracy drops on longer/rarer words
+  // regardless of pronunciation quality (less training data to draw on),
+  // so longer/harder words need more tolerance for that noise, not less.
+  // Difficulty nudges the tolerance by one step either way.
+  function maxAllowedDistance(len, difficulty){
+    var base = Math.max(1, Math.round(len * 0.25)); // roughly 1 edit per 4 letters
+    if (difficulty === 'easy') return Math.max(1, base - 1);
+    if (difficulty === 'hard') return base + 1;
+    return base; // medium
+  }
+
+  function isWordMatch(target, heard, difficulty){
+    var t = normalize(target), h = normalize(heard);
+    if (!h) return false;
+    var dist = levenshtein(t, h);
+    return dist <= maxAllowedDistance(t.length, difficulty);
+  }
+
+  function sentenceSimilarity(target, heard){
+    var t = normalize(target).split(' ').filter(Boolean);
+    var h = normalize(heard).split(' ').filter(Boolean);
+    if (!h.length || !t.length) return 0;
+    var hi = 0, matches = 0;
+    for (var k1 = 0; k1 < t.length; k1++){
+      var tw = t[k1];
+      var found = -1;
+      for (var k2 = hi; k2 < h.length; k2++){
+        if (wordsClose(tw, h[k2])) { found = k2; break; }
+      }
+      if (found >= 0) { matches++; hi = found + 1; }
+    }
+    return matches / t.length;
+  }
+
+  /* ---------------- List parsing ---------------- */
+  function parseList(raw, mode){
+    var lines = raw.split('\n').map(function(l){ return l.trim(); }).filter(Boolean);
+    if (mode === 'word'){
+      return lines.map(function(l){
+        var parts = l.split('|').map(function(s){ return s.trim(); });
+        return { type: 'word', text: parts[0], difficulty: (parts[1] || 'medium').toLowerCase() };
+      }).filter(function(it){ return it.text; });
+    }
+    return lines.filter(function(l){ return /^[QA]:/i.test(l); }).map(function(l){
+      var type = l[0].toUpperCase() === 'Q' ? 'question' : 'answer';
+      return { type: type, text: l.slice(2).trim() };
+    }).filter(function(it){ return it.text; });
+  }
+
+  function shuffle(arr){
+    var a = arr.slice();
+    for (var i = a.length - 1; i > 0; i--){
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
+  /* ---------------- Setup screen behaviour ---------------- */
+  // Tracks whether the textarea still holds one of the built-in samples
+  // (in which case switching modes is allowed to swap it) vs text the
+  // teacher/student has actually typed (which is never overwritten).
+  var listIsCustom = false;
+
+  function currentMode(){
+    var checked = document.querySelector('input[name=mode]:checked');
+    return checked ? checked.value : 'word';
+  }
+
+  function updateRoundLengthDisplay(){
+    var mode = currentMode();
+    var secs = mode === 'word' ? CONFIG.wordRoundSeconds : CONFIG.sentenceRoundSeconds;
+    roundLengthDisplay.textContent = secs + 's — fixed, same for every student';
+  }
+
+  function refreshSetupForMode(){
+    var mode = currentMode();
+    if (mode === 'word'){
+      listLabel.textContent = 'Word list';
+      listHint.textContent = 'One word per line. Add |easy, |medium, or |hard after a word to set difficulty (e.g. "necessary|hard"). Difficulty just affects how strict the pronunciation match is.';
+      if (!listIsCustom) listInput.value = SAMPLE_WORDS;
+    } else {
+      listLabel.textContent = 'Questions & answers';
+      listHint.textContent = 'One line per item, prefixed with "Q:" or "A:". Each question and each answer is its own read-aloud item.';
+      if (!listIsCustom) listInput.value = SAMPLE_SENTENCES;
+    }
+    updateRoundLengthDisplay();
+  }
+
+  modeRadios.forEach(function(r){ r.addEventListener('change', refreshSetupForMode); });
+  listInput.addEventListener('input', function(){
+    listIsCustom = (listInput.value !== SAMPLE_WORDS && listInput.value !== SAMPLE_SENTENCES);
+  });
+  refreshSetupForMode();
+
+  /* ---------------- Screen switching ---------------- */
+  function showScreen(name){
+    Object.keys(screens).forEach(function(k){
+      screens[k].classList.toggle('active', k === name);
     });
   }
-}
-function showMatchContinue(){
-  const rem=mch.pool.length;
-  document.getElementById('mLbl').textContent=`Round done! ${rem} card${rem!==1?'s':''} left`;
-  document.getElementById('mGrid').innerHTML+=`<div style="grid-column:1/-1;text-align:center;margin-top:8px">
-    <button class="btn btn-pri" onclick="nextMatchRound()">Next Round →</button></div>`;
-}
-function nextMatchRound(){
-  const next=mch.pool.slice(0,6); mch.pool=mch.pool.slice(6);
-  startMatchRound(next);
-}
-function endMatch(){
-  const total=mch.cards.length;
-  if(mch.onDone){mch.onDone(mch.secs);return;}
-  saveSc('match',{secs:mch.secs,pairs:total});
-  const rounds=Math.ceil(total/6);
-  document.getElementById('view-match').innerHTML=resHTML('⏱️',fmtT(mch.secs),'Total time',
-    [['Cards matched',total],['Rounds',rounds],['Avg per round',fmtT(Math.round(mch.secs/rounds))]],'buildMatch()',"setMode('browse')");
-}
 
-/* ─── QUIZ ──────────────────────────────────── */
-function buildQuiz(cards,onDone){
-  cards=cards||getCards();
-  const el=document.getElementById('view-quiz');
-  if(cards.length<2){el.innerHTML=flt==='mine'?empty('Need at least 2 cards.','Star more cards.'):empty('Need at least 2 cards.');return;}
-  el.innerHTML=`<div class="prog"><div class="prog-fill" id="qProg" style="width:0%"></div></div>
-    <div class="quiz-q"><div class="quiz-qlbl">Choose the correct definition</div><div class="quiz-term" id="qTerm"></div></div>
-    <div class="quiz-opts" id="qOpts"></div>`;
-  qz={cards,order:shuf([...Array(cards.length).keys()]),idx:0,answers:{},locked:false,onDone:onDone||null};
-  renderQuiz();
-}
-function renderQuiz(){
-  if(qz.idx>=qz.cards.length){endQuiz();return;}
-  const card=qz.cards[qz.order[qz.idx]];
-  document.getElementById('qTerm').textContent=card.term;
-  document.getElementById('qProg').style.width=(qz.idx/qz.cards.length*100)+'%';
-  const wrong=shuf(qz.cards.filter(c=>c!==card)).slice(0,3).map(c=>c.definition);
-  document.getElementById('qOpts').innerHTML=shuf([card.definition,...wrong]).map(opt=>
-    `<button class="qopt" onclick="pickOpt(this,${opt===card.definition})">${esc(opt)}</button>`
-  ).join('');
-  qz.locked=false;
-}
-function pickOpt(btn,ok){
-  if(qz.locked)return;
-  qz.locked=true; qz.answers[qz.idx]=ok;
-  btn.closest('.quiz-opts').querySelectorAll('.qopt').forEach(b=>b.classList.add('locked'));
-  btn.classList.add(ok?'correct':'wrong');
-  if(!ok){
-    const corr=qz.cards[qz.order[qz.idx]].definition;
-    btn.closest('.quiz-opts').querySelectorAll('.qopt').forEach(b=>{if(b.textContent===corr)b.classList.add('correct');});
+  /* ---------------- Pulse visual ---------------- */
+  var pulsePhase = 0;
+  function drawPulse(fraction){
+    // fraction: 0..1 of time remaining
+    var amp = 8 + fraction * 38;
+    var pts = [];
+    var steps = 40;
+    for (var i = 0; i <= steps; i++){
+      var x = (i / steps) * 1000;
+      var noise = Math.sin(pulsePhase + i * 0.9) * amp + Math.sin(pulsePhase * 0.4 + i * 0.35) * amp * 0.3;
+      var y = 60 + noise * (0.4 + 0.6 * fraction);
+      pts.push(x.toFixed(1) + ',' + y.toFixed(1));
+    }
+    pulsePath.setAttribute('d', 'M' + pts.join(' L'));
+    pulsePhase += 0.6;
+
+    var color = '#5FD068';
+    if (fraction < 0.2) color = '#FF5C5C';
+    else if (fraction < 0.5) color = '#F2B705';
+    pulsePath.setAttribute('stroke', color);
   }
-  setTimeout(()=>{qz.idx++;renderQuiz();},1200);
-}
-function endQuiz(){
-  const n=Object.values(qz.answers).filter(Boolean).length,tot=qz.cards.length,p=pct(n,tot);
-  if(qz.onDone){qz.onDone(n,tot,p);return;}
-  saveSc('quiz',{score:n,total:tot,pct:p});
-  document.getElementById('view-quiz').innerHTML=resHTML(starIco(p),`${n}/${tot}`,`${p}% correct`,
-    [['Correct',n],['Wrong',tot-n],['Accuracy',p+'%']],'buildQuiz()',"setMode('browse')");
-}
 
-/* ─── MARATHON ──────────────────────────────── */
-function buildMarathon(){
-  const cards=getCards(),ok=cards.length>=2;
-  document.getElementById('view-marathon').innerHTML=`<div class="mrt-intro">
-    <div class="mrt-hero">🏃</div>
-    <h2>Study Session</h2>
-    <p>All cards · three stages in a row</p>
-    <p><strong>Learn</strong> → <strong>Quiz</strong> → <strong>Match</strong></p>
-    <div class="mrt-n">${cards.length} cards</div>
-    <button class="btn btn-pri" style="padding:14px 36px;font-size:16px" onclick="startMarathon()" ${ok?'':'disabled'}>
-      ${ok?'Start Session':'Need at least 2 cards'}
-    </button>
-    ${flt==='mine'&&!ok?'<p class="mt12" style="font-size:13px;color:var(--mut)">Star more cards in Browse first</p>':''}
-  </div>`;
-}
+  function spikeFx(){
+    pulseWrap.classList.remove('spike');
+    void pulseWrap.offsetWidth;
+    pulseWrap.classList.add('spike');
+  }
 
-function mrtEl(){return document.getElementById('view-marathon');}
+  function formatClock(ms){
+    var s = Math.max(0, Math.ceil(ms / 1000));
+    var m = Math.floor(s / 60);
+    var r = s % 60;
+    return m + ':' + (r < 10 ? '0' : '') + r;
+  }
 
-function phaseBar(active){
-  const order={learn:0,quiz:1,match:2};
-  const labels={learn:'Phase 1 of 3 · Learn',quiz:'Phase 2 of 3 · Quiz',match:'Phase 3 of 3 · Match'};
-  const dots=['learn','quiz','match'].map(p=>{
-    let cls='mrt-dot'; const diff=order[p]-order[active];
-    if(diff<0)cls+=' done'; else if(diff===0)cls+=' active';
-    return`<div class="${cls}"></div>`;
-  }).join('');
-  return`<div class="mrt-bar"><span class="mrt-bar-lbl">${labels[active]}</span><div class="mrt-dots">${dots}</div></div>`;
-}
+  /* ---------------- Game loop ---------------- */
+  function startTickLoop(){
+    if (tickHandle) clearInterval(tickHandle);
+    tickHandle = setInterval(tick, 100);
+  }
+  function stopTickLoop(){
+    if (tickHandle) clearInterval(tickHandle);
+    tickHandle = null;
+  }
 
-function startMarathon(){
-  mrt={active:true,cards:getCards(),startMs:Date.now(),lRes:null,qRes:null,mSecs:0};
-  // Clear standalone views to prevent duplicate element IDs
-  ['learn','quiz','match'].forEach(m=>document.getElementById('view-'+m).innerHTML='');
-  mrtLearnPhase();
-}
+  function tick(){
+    if (!state.running) return;
+    var now = performance.now();
+    if (now >= state.pausedUntil){
+      state.remainingMs -= 100;
+    }
+    var fraction = Math.max(0, state.remainingMs / state.totalMs);
+    drawPulse(fraction);
+    clockBadge.textContent = formatClock(state.remainingMs);
+    if (state.remainingMs <= 0){
+      endGame('time');
+    }
+  }
 
-function mrtLearnPhase(){
-  mrtEl().innerHTML=phaseBar('learn')+'<div id="mg"></div>';
-  document.getElementById('mg').innerHTML=learnHTML();
-  lrn={
-    cards:mrt.cards,
-    order:shuf([...Array(mrt.cards.length).keys()]),
-    idx:0,answers:{},locked:false,
-    onDone:(n,tot,p)=>{mrt.lRes={n,tot,p}; mrtTrans('learn',n,tot,p,mrtQuizPhase);}
-  };
-  renderLearn();
-}
+  function loadCurrentItem(){
+    var item = state.list[state.index];
+    targetText.textContent = item.text;
+    targetText.className = 'target ' + (state.mode === 'word' ? 'mode-word' : 'mode-sentence');
+    progressText.textContent = (state.index + 1) + '/' + state.list.length;
+    clearedText.textContent = state.cleared;
+    setHeard('—', 'idle');
+  }
 
-function mrtQuizPhase(){
-  mrtEl().innerHTML=phaseBar('quiz')+'<div id="mg"></div>';
-  document.getElementById('mg').innerHTML=`
-    <div class="prog"><div class="prog-fill" id="qProg" style="width:0%"></div></div>
-    <div class="quiz-q"><div class="quiz-qlbl">Choose the correct definition</div><div class="quiz-term" id="qTerm"></div></div>
-    <div class="quiz-opts" id="qOpts"></div>`;
-  qz={
-    cards:mrt.cards,
-    order:shuf([...Array(mrt.cards.length).keys()]),
-    idx:0,answers:{},locked:false,
-    onDone:(n,tot,p)=>{mrt.qRes={n,tot,p}; mrtTrans('quiz',n,tot,p,mrtMatchPhase);}
-  };
-  renderQuiz();
-}
+  function setHeard(text, cls){
+    heardText.textContent = text;
+    heardText.className = 'heard-text ' + cls;
+  }
 
-function mrtMatchPhase(){
-  mrtEl().innerHTML=phaseBar('match')+'<div id="mg"></div>';
-  document.getElementById('mg').innerHTML=matchHTML('buildMarathon()','Quit Session');
-  clearInterval(mch.iv); mch.iv=null;
-  const cards=[...mrt.cards];
-  mch={
-    cards:[...cards],pool:cards.slice(6),tiles:[],sel:null,done:new Set(),iv:null,secs:0,
-    onDone:(secs)=>{mrt.mSecs=secs; mrtFinish();}
-  };
-  startMatchRound(cards.slice(0,6));
-}
+  function onCorrect(){
+    state.cleared++;
+    var pauseMs = state.mode === 'word' ? 500 : 2500;
+    state.pausedUntil = performance.now() + pauseMs;
+    spikeFx();
+    state.index++;
+    clearedText.textContent = state.cleared;
+    if (state.index >= state.list.length){
+      endGame('cleared');
+      return;
+    }
+    loadCurrentItem();
+  }
 
-function mrtTrans(phase,n,tot,p,nextFn){
-  const ico=phase==='learn'?'📖':'❓';
-  const nextName=phase==='learn'?'Quiz':'Match';
-  mrtEl().innerHTML=`<div class="mrt-trans">
-    <div class="mrt-t-ico">${ico}</div>
-    <div class="mrt-t-head">${phase==='learn'?'Learn':'Quiz'} Complete!</div>
-    <div class="mrt-t-score">${n}/${tot}</div>
-    <div class="mrt-t-sub">${p}% accuracy</div>
-    <div class="mrt-t-next">Next up: <strong>${nextName}</strong></div>
-    <button class="btn btn-pri" style="padding:12px 32px" onclick="mrtContinue()">Continue →</button>
-  </div>`;
-  window._mrtNext=nextFn;
-}
-function mrtContinue(){if(window._mrtNext){const f=window._mrtNext;window._mrtNext=null;f();}}
+  function evaluateAttempt(transcript){
+    if (!state.running) return;
+    if (!transcript){
+      setHeard('No speech caught — hold the button and try again', 'miss');
+      return;
+    }
+    var item = state.list[state.index];
+    var pass;
+    if (state.mode === 'word'){
+      pass = isWordMatch(item.text, transcript, item.difficulty);
+    } else {
+      pass = sentenceSimilarity(item.text, transcript) >= 0.85;
+    }
+    setHeard(transcript, pass ? 'hit' : 'miss');
+    if (pass) onCorrect();
+  }
 
-function mrtFinish(){
-  const totalSecs=Math.round((Date.now()-mrt.startMs)/1000);
-  const lp=mrt.lRes?.p||0, qp=mrt.qRes?.p||0;
-  const overall=Math.round((lp+qp)/2);
-  const tot=mrt.cards.length;
-  saveSc('marathon',{secs:mrt.mSecs,accuracy:overall,total:tot});
-  mrt.active=false;
-  mrtEl().innerHTML=`<div class="res-card">
-    <div class="res-ico">${overall>=90?'🏆':overall>=70?'🌟':'⭐'}</div>
-    <div class="res-score">${overall}%</div>
-    <div class="res-sub">Overall accuracy · Session complete!</div>
-    <div class="res-table">
-      <div class="res-row"><span>Total session time</span><span>${fmtT(totalSecs)}</span></div>
-      <div class="res-row"><span>Learn accuracy</span><span>${lp}%</span></div>
-      <div class="res-row"><span>Quiz accuracy</span><span>${qp}%</span></div>
-      <div class="res-row"><span>Match time</span><span>${fmtT(mrt.mSecs)}</span></div>
-      <div class="res-row"><span>Cards studied</span><span>${tot}</span></div>
-    </div>
-    <div class="res-btns">
-      <button class="btn btn-ghost" onclick="setMode('browse')">Browse</button>
-      <button class="btn btn-pri" onclick="startMarathon()">Go Again</button>
-    </div>
-  </div>`;
-}
+  function endGame(reason){
+    state.running = false;
+    stopTickLoop();
+    if (state.listening) stopListening();
+    var total = state.list.length;
+    if (reason === 'cleared'){
+      endTitle.textContent = 'Cleared the whole list!';
+      endStats.textContent = total + ' / ' + total + ' — with ' + formatClock(state.remainingMs) + ' to spare';
+    } else {
+      endTitle.textContent = "Time's up";
+      endStats.textContent = 'You cleared ' + state.cleared + ' / ' + total;
+    }
+    showScreen('end');
+  }
 
-/* ─── KEYBOARD ──────────────────────────────── */
-document.addEventListener('keydown',e=>{
-  if(mode!=='flashcards')return;
-  if(e.key==='ArrowRight'||e.key===' '){e.preventDefault();fcMove(1);}
-  if(e.key==='ArrowLeft'){e.preventDefault();fcMove(-1);}
-  if(e.key==='Enter')flipFC();
-});
+  /* ---------------- Mic / recognition handling ---------------- */
+  var releaseTimer = null;
 
-/* ─── SAMPLE DATA ───────────────────────────── */
-function sample(){return[
-  {term:'abandon',definition:'to leave a place or person permanently',example:'They had to abandon the car in the flood.',category:'Verbs'},
-  {term:'accomplish',definition:'to succeed in doing something difficult',example:'She accomplished her dream of studying abroad.',category:'Verbs'},
-  {term:'adapt',definition:'to change your behaviour for a new situation',example:'It takes time to adapt to a new culture.',category:'Verbs'},
-  {term:'collaborate',definition:'to work together with other people',example:'The students collaborated on the project.',category:'Verbs'},
-  {term:'hesitate',definition:'to pause before acting because you are unsure',example:"Don't hesitate to ask for help.",category:'Verbs'},
-  {term:'ambitious',definition:'wanting to be very successful in life',example:'She is ambitious and works very hard.',category:'Adjectives'},
-  {term:'cautious',definition:'careful to avoid danger or problems',example:'He was cautious when crossing the road.',category:'Adjectives'},
-  {term:'confident',definition:'feeling sure about your own abilities',example:'She felt confident before her interview.',category:'Adjectives'},
-  {term:'diligent',definition:'working carefully and never giving up',example:'A diligent student always does their homework.',category:'Adjectives'},
-  {term:'genuine',definition:'real and sincere and not pretending',example:'His smile was genuine and very warm.',category:'Adjectives'},
-  {term:'achievement',definition:'something difficult that you have successfully done',example:'Winning the award was a great achievement.',category:'Nouns'},
-  {term:'opportunity',definition:'a chance to do something you want to do',example:'Studying abroad is a great opportunity.',category:'Nouns'},
-  {term:'perspective',definition:'a way of thinking about or understanding something',example:'Travel gives you a new perspective on life.',category:'Nouns'},
-  {term:'take advantage of',definition:'to use a good situation to get a benefit for yourself',example:'Take advantage of every learning opportunity.',category:'Phrases'},
-  {term:'keep in mind',definition:'to remember an important fact or detail',example:'Keep in mind that the exam is next Friday.',category:'Phrases'},
-  {term:'make progress',definition:'to improve or develop in skill or knowledge',example:"You're making great progress with your English.",category:'Phrases'},
-];}
+  function startListening(){
+    if (!SR_SUPPORTED || state.listening || state.busy || !state.running) return;
+    state.listening = true;
+    lastFinalTranscript = '';
+    setHeard('Listening…', 'live');
+    micBtn.classList.remove('checking');
+    micBtn.classList.add('active');
+    try { recognition.start(); } catch(e) { /* ignore if engine already mid-cycle */ }
+
+    var maxMs = state.mode === 'word' ? 7000 : 15000;
+    watchdogHandle = setTimeout(function(){
+      if (state.listening) stopListening();
+    }, maxMs);
+  }
+
+  function stopListening(){
+    if (!SR_SUPPORTED || !state.listening || state.busy) return;
+    // Released — but don't tell the engine to stop just yet. A short
+    // buffer here gives the tail end of the word (and any network lag)
+    // time to actually be captured, instead of getting cut off right at
+    // the moment of release. The button shows a distinct "checking" look
+    // for this whole window so it's never mistaken for "ready to press".
+    micBtn.classList.remove('active');
+    micBtn.classList.add('checking');
+    setHeard('Checking…', 'live');
+    state.busy = true;
+    if (watchdogHandle) { clearTimeout(watchdogHandle); watchdogHandle = null; }
+    releaseTimer = setTimeout(function(){
+      try { recognition.stop(); }
+      catch(e) { state.listening = false; state.busy = false; micBtn.classList.remove('checking'); }
+    }, CONFIG.releaseBufferMs);
+  }
+
+  if (SR_SUPPORTED){
+    recognition.onresult = function(e){
+      var interim = '', final = '';
+      for (var i = e.resultIndex; i < e.results.length; i++){
+        var tr = e.results[i][0].transcript;
+        if (e.results[i].isFinal) final += tr; else interim += tr;
+      }
+      if (final) lastFinalTranscript = final.trim();
+      if (state.running && !state.busy) setHeard(final || interim || '…', 'live');
+    };
+
+    recognition.onerror = function(e){
+      if (!state.running) return;
+      if (e.error === 'no-speech'){
+        setHeard('Didn\'t catch that — try again', 'miss');
+      } else if (e.error === 'not-allowed' || e.error === 'service-not-allowed'){
+        setHeard('Microphone blocked — check browser permissions', 'error');
+      } else if (e.error === 'network'){
+        setHeard('Network error — needs an internet connection', 'error');
+      } else {
+        setHeard('Recognition error (' + e.error + ')', 'error');
+      }
+    };
+
+    recognition.onend = function(){
+      state.listening = false;
+      state.busy = false;
+      micBtn.classList.remove('checking');
+      evaluateAttempt(lastFinalTranscript);
+    };
+  }
+
+  micBtn.addEventListener('pointerdown', function(e){ e.preventDefault(); startListening(); });
+  ['pointerup','pointercancel','pointerleave'].forEach(function(evt){
+    micBtn.addEventListener(evt, function(e){ e.preventDefault(); stopListening(); });
+  });
+  micBtn.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+
+  document.addEventListener('keydown', function(e){
+    if (e.code === 'Space' && screens.game.classList.contains('active')){
+      e.preventDefault();
+      startListening();
+    }
+  });
+  document.addEventListener('keyup', function(e){
+    if (e.code === 'Space' && screens.game.classList.contains('active')){
+      e.preventDefault();
+      stopListening();
+    }
+  });
+
+  /* ---------------- Start / quit / replay ---------------- */
+  function beginRound(list, mode, seconds){
+    state.mode = mode;
+    state.list = shuffleCheck.checked ? shuffle(list) : list;
+    state.totalMs = seconds * 1000;
+    state.remainingMs = state.totalMs;
+    state.index = 0;
+    state.cleared = 0;
+    state.pausedUntil = 0;
+    pulsePhase = 0;
+    modeLabel.textContent = mode === 'word' ? 'Words' : 'Sentences';
+    showScreen('game');
+    loadCurrentItem();
+    drawPulse(1);
+    clockBadge.textContent = formatClock(state.remainingMs);
+    state.running = true;
+    startTickLoop();
+  }
+
+  var lastRoundConfig = null;
+
+  startBtn.addEventListener('click', function(){
+    var mode = currentMode();
+    var list = parseList(listInput.value, mode);
+    if (!list.length){
+      alert('Add at least one item to the list first.');
+      return;
+    }
+    var seconds = mode === 'word' ? CONFIG.wordRoundSeconds : CONFIG.sentenceRoundSeconds;
+    lastRoundConfig = { list: list, mode: mode, seconds: seconds };
+    beginRound(list, mode, seconds);
+  });
+
+  quitBtn.addEventListener('click', function(){
+    if (state.running) endGame('time');
+    showScreen('setup');
+  });
+
+  playAgainBtn.addEventListener('click', function(){
+    if (lastRoundConfig) beginRound(lastRoundConfig.list, lastRoundConfig.mode, lastRoundConfig.seconds);
+  });
+
+  backToSetupBtn.addEventListener('click', function(){
+    showScreen('setup');
+  });
+
+})();
 </script>
 </body>
 </html>
