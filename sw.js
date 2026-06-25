@@ -14,6 +14,9 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // Only handle requests within this app's scope — prevents interfering with other apps
+  if (!e.request.url.startsWith(self.registration.scope)) return;
+
   // Network-first for cards.csv — always pulls latest cards
   if (e.request.url.includes('cards.csv')) {
     e.respondWith(

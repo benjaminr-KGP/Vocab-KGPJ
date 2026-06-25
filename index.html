@@ -122,10 +122,11 @@ html,body{height:100%;background:var(--bg);color:var(--txt);
 .bcard:hover{box-shadow:var(--shl)}
 .bcard-body{flex:1;min-width:0}
 .bterm{font-size:15px;font-weight:700}
-.bdef,.bex{display:none}
+.bdef,.bex,.bjp{display:none}
 .bdef{font-size:13px;color:var(--mut);margin-top:5px;line-height:1.5}
 .bex{font-size:12px;color:var(--mut);font-style:italic;margin-top:3px}
-.bcard.open .bdef,.bcard.open .bex{display:block}
+.bjp{font-size:15px;font-weight:700;color:var(--pri);margin-top:6px}
+.bcard.open .bdef,.bcard.open .bex,.bcard.open .bjp{display:block}
 .btag{
   display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;
   text-transform:uppercase;padding:2px 8px;border-radius:10px;margin-top:5px
@@ -492,6 +493,7 @@ function renderBrowse(){
         <div class="bterm">${esc(card.term)}</div>
         <div class="bdef">${esc(card.definition)}</div>
         ${card.example?`<div class="bex">"${esc(card.example)}"</div>`:''}
+        ${card.japanese?`<div class="bjp">${esc(card.japanese)}</div>`:''}
         ${card.category?`<span class="btag" style="background:${col}22;color:${col}">${esc(card.category)}</span>`:''}
       </div>
       <button class="star${on?' on':''}" onclick="event.stopPropagation();bStar('${esc(card.term)}',this)">${on?'★':'☆'}</button>
